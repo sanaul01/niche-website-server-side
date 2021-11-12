@@ -19,6 +19,7 @@ async function run(){
 
         const database = client.db('bike_lover');
         const productsCollection = database.collection('products');
+        const usersCollection = database.collection('users');
 
         // Get products 
         app.get('/products', async (req, res)=>{
@@ -40,6 +41,14 @@ async function run(){
             const product = req.body;
             const result = await productsCollection.insertOne(product);
             res.json(result)
+        })
+
+        // Add user in server 
+        app.post('/users', async (req, res)=>{
+            const user = req.body;
+            const result = await usersCollection.insertOne(user);
+            console.log(result)
+            res.json(result);
         })
     }
     finally {
