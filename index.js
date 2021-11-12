@@ -19,6 +19,7 @@ async function run(){
 
         const database = client.db('bike_lover');
         const productsCollection = database.collection('products');
+        const ordersCollection = database.collection('orders')
         const usersCollection = database.collection('users');
 
         // Get products 
@@ -36,12 +37,36 @@ async function run(){
             res.json(product)
         })
 
+        // Get an order 
+        app.get('/orders', async (req, res)=>{
+            const email = req.query.email;
+            const query = {email: email}
+            const cursor = ordersCollection.find(query);
+            const order = await cursor.toArray();
+            res.json(order)
+        })
+
         // Add product in database 
         app.post('/products', async (req, res)=>{
             const product = req.body;
             const result = await productsCollection.insertOne(product);
             res.json(result)
         })
+
+        // Add orders in database 
+        app.post('/orders', async (req, res)=>{
+            const order = req.body;
+            const result = await ordersCollection.insertOne(order);
+            res.json(result);
+        })
+
+        // Delete an order 
+        // app.delete('/orders/:id', async (req, res)=>{
+        //     const id = req.params.id;
+        //     const query = {_id: ObjectId(id)};
+        //     const order = await ordersCollection.deleteOne(query);
+        //     res.json(order)
+        // })
 
         // Add user in server 
         app.post('/users', async (req, res)=>{
