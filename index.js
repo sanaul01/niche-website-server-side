@@ -75,6 +75,29 @@ async function run(){
             console.log(result)
             res.json(result);
         })
+
+        // Make an admin user 
+        app.put('/users/admin', async (req, res)=>{
+            const user = req.body;
+            console.log('put', user)
+            const filter = { email: user.email };
+            const updateDoc = { $set: {role: 'admin'} };
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.json(result)
+        })
+
+        // Find an admin user 
+        app.get('/users/:email', async (req, res)=>{
+            const email = req.params.email;
+            const query = {email: email};
+            const user = await usersCollection.findOne(query);
+            let isAdmin = false;
+            if(user?.role === 'admin'){
+                isAdmin = true;
+            }
+            res.json({admin: isAdmin})
+        })
+
     }
     finally {
         // await client.close();
