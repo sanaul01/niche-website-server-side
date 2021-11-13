@@ -1,17 +1,40 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const admin = require("firebase-admin");
 require('dotenv').config();
 const { MongoClient } = require('mongodb');
 const ObjectId = require("mongodb").ObjectId;
 
 const port = process.env.PORT || 5000;
 
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 app.use(cors());
 app.use(express.json())
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.hcshw.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+async function verifyToken(req, res, next){
+    if(req?.headers?.authorization?.startsWith('Bearer ')){
+        const token = req.headers.authorization.split(' ')[1];
+
+        try{
+            const decodedUser = await admin.auth().verifyIdToken(token);
+            req.decodedEmail = decodedUser.email;
+        }
+        catch{
+
+        }
+
+    }
+    next();
+}
 
 async function run(){
     try{
@@ -25,8 +48,18 @@ async function run(){
         // Get products 
         app.get('/products', async (req, res)=>{
             const cursor = productsCollection.find({});
-            const products = await cursor.toArray();
-            res.json(products);
+            const page  = req.query.page;
+            const size = parseInt(req.query.size);
+            let products;
+            const count = await cursor.count();
+            if(page){
+                products = await cursor.skip(page*size).limit(size).toArray()
+            }
+            else{
+                products = await cursor.toArray();
+            }
+            
+            res.json({count, products});
         })
 
         // Get a product 
@@ -38,12 +71,20 @@ async function run(){
         })
 
         // Get an order 
-        app.get('/orders', async (req, res)=>{
+        app.get('/orders', verifyToken, async (req, res)=>{
             const email = req.query.email;
             const query = {email: email}
             const cursor = ordersCollection.find(query);
             const order = await cursor.toArray();
             res.json(order)
+        })
+
+        // Get all orders 
+        app.get('/orders/id', async (req,res)=>{
+            const cursor = ordersCollection.find({});
+            console.log('orders', cursor)
+            const result = await cursor.toArray();
+            res.json(result)
         })
 
         // Add product in database 
@@ -61,12 +102,12 @@ async function run(){
         })
 
         // Delete an order 
-        // app.delete('/orders/:id', async (req, res)=>{
-        //     const id = req.params.id;
-        //     const query = {_id: ObjectId(id)};
-        //     const order = await ordersCollection.deleteOne(query);
-        //     res.json(order)
-        // })
+        app.delete('/orders/:id', async (req, res)=>{
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const order = await ordersCollection.deleteOne(query);
+            res.json(order)
+        })
 
         // Add user in server 
         app.post('/users', async (req, res)=>{
@@ -77,13 +118,21 @@ async function run(){
         })
 
         // Make an admin user 
-        app.put('/users/admin', async (req, res)=>{
+        app.put('/users/admin', verifyToken, async (req, res)=>{
             const user = req.body;
-            console.log('put', user)
-            const filter = { email: user.email };
-            const updateDoc = { $set: {role: 'admin'} };
-            const result = await usersCollection.updateOne(filter, updateDoc);
-            res.json(result)
+            const requester = req.decodedEmail;
+            if(requester){
+                const requesterAccount = await usersCollection.findOne({email: requester});
+                if(requesterAccount.role === 'admin'){
+                    const filter = { email: user.email };
+                    const updateDoc = { $set: {role: 'admin'} };
+                    const result = await usersCollection.updateOne(filter, updateDoc);
+                    res.json(result)
+                }
+            }
+            else{
+                res.status(403).json({message: 'You do not have access to make admin'})
+            }
         })
 
         // Find an admin user 
