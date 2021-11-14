@@ -60,15 +60,15 @@ async function run(){
             }
             
             res.json({count, products});
-        })
+        });
 
         // Get a product 
         app.get('/products/:id', async (req, res)=>{
             const id = req.params.id;
             const query = {_id: ObjectId(id)};
             const product = await productsCollection.findOne(query);
-            res.json(product)
-        })
+            res.json(product);
+        });
 
         // Get an order 
         app.get('/orders', verifyToken, async (req, res)=>{
@@ -77,7 +77,7 @@ async function run(){
             const cursor = ordersCollection.find(query);
             const order = await cursor.toArray();
             res.json(order)
-        })
+        });
 
         // Get all orders 
         app.get('/orders/id', async (req,res)=>{
@@ -85,21 +85,21 @@ async function run(){
             console.log('orders', cursor)
             const result = await cursor.toArray();
             res.json(result)
-        })
+        });
 
         // Add product in database 
         app.post('/products', async (req, res)=>{
             const product = req.body;
             const result = await productsCollection.insertOne(product);
             res.json(result)
-        })
+        });;
 
         // Add orders in database 
         app.post('/orders', async (req, res)=>{
             const order = req.body;
             const result = await ordersCollection.insertOne(order);
             res.json(result);
-        })
+        });
 
         // Delete an order 
         app.delete('/orders/:id', async (req, res)=>{
@@ -107,7 +107,15 @@ async function run(){
             const query = {_id: ObjectId(id)};
             const order = await ordersCollection.deleteOne(query);
             res.json(order)
-        })
+        });
+
+        // Delete a Product 
+        app.delete('/products/:id', async (req, res)=>{
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const product = await productsCollection.deleteOne(query);
+            res.json(product)
+        });
 
         // Add user in server 
         app.post('/users', async (req, res)=>{
@@ -115,7 +123,7 @@ async function run(){
             const result = await usersCollection.insertOne(user);
             console.log(result)
             res.json(result);
-        })
+        });
 
         // Make an admin user 
         app.put('/users/admin', verifyToken, async (req, res)=>{
@@ -133,7 +141,7 @@ async function run(){
             else{
                 res.status(403).json({message: 'You do not have access to make admin'})
             }
-        })
+        });
 
         // Find an admin user 
         app.get('/users/:email', async (req, res)=>{
@@ -161,4 +169,4 @@ app.get('/', (req, res)=>{
 
 app.listen(port, ()=>{
     console.log(`listening, ${port}`)
-})
+});
