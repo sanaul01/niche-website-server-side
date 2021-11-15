@@ -44,6 +44,7 @@ async function run(){
         const productsCollection = database.collection('products');
         const ordersCollection = database.collection('orders')
         const usersCollection = database.collection('users');
+        const reviewsCollection = database.collection('reviews');
 
         // Get products 
         app.get('/products', async (req, res)=>{
@@ -87,12 +88,27 @@ async function run(){
             res.json(result)
         });
 
+        // Get all reviews 
+        app.get('/reviews', async (req, res)=>{
+            const cursor = reviewsCollection.find({});
+            const result = await cursor.toArray()
+            res.json(result)
+        })
+
         // Add product in database 
         app.post('/products', async (req, res)=>{
             const product = req.body;
             const result = await productsCollection.insertOne(product);
             res.json(result)
         });;
+
+        // Add reviews 
+        app.post('/reviews', async (req, res)=>{
+            const review = req.body;
+            console.log(review)
+            const result = await reviewsCollection.insertOne(review);
+            res.json(result)
+        })
 
         // Add orders in database 
         app.post('/orders', async (req, res)=>{
